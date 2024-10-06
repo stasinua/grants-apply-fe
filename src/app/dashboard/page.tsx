@@ -14,7 +14,6 @@ import {
 } from '@mui/material';
 import { useQuery, useMutation } from '@apollo/client';
 
-import { grantsQuery } from '@/api/grants';
 import { graphQlClient } from '@/api/index';
 import { addFeedbackMutation } from '@/api/applicantGrantFeedbacks/api';
 import GrantCard from './components/GrantCard';

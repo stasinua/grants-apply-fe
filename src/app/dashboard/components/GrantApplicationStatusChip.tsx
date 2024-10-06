@@ -2,7 +2,7 @@ import { Chip } from '@mui/material';
 import { GridRenderCellParams } from '@mui/x-data-grid';
 
 interface StatusProps {
-  status: boolean | null;
+  status: boolean | null | undefined;
 }
 
 const GrantApplicationStatusChip = ({ status }: StatusProps) => {
@@ -12,7 +12,7 @@ const GrantApplicationStatusChip = ({ status }: StatusProps) => {
     <Chip
       sx={{
         backgroundColor: (theme) =>
-          status === null
+          status === null || status === undefined
             ? theme.palette.info.main
             : status
             ? 'green'
