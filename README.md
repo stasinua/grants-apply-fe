@@ -4,16 +4,16 @@ Test task. This repo contains frontend for backend in another repo: "grants-appl
 
 ## Getting Started
 
-First, run the development server:
+Install yarn if necessary
+
+```
+npm install --global yarn
+```
+
+Run the development server:
 
 ```bash
-npm run dev
-# or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
@@ -29,5 +29,5 @@ NEXT_PUBLIC_BACKEND_URL="http://localhost:4002"
 ## Deployment/containerization
 
 ```bash
-docker build -t grants-apply-fe .
+yarn container:app
 ```
