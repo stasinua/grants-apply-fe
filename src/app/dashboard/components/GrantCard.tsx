@@ -15,12 +15,14 @@ import { DateTime } from 'luxon';
 import TopActionIconButton from './TopActionIconButton';
 
 interface GrantCardProps {
+  mutationLoading: string;
   grant: Grant;
   onClickFeedback: (positive: boolean) => void;
   onClickApply: () => void;
 }
 
 const GrantCard = ({
+  mutationLoading,
   grant: {
     id,
     name,
@@ -53,10 +55,12 @@ const GrantCard = ({
             <Avatar sx={{ width: 30, height: 30 }} />
             <Stack direction={'row'} spacing={1}>
               <TopActionIconButton
+                loading={mutationLoading === 'like'}
                 type="like"
                 onClick={() => onClickFeedback(true)}
               />
               <TopActionIconButton
+                loading={mutationLoading === 'dislike'}
                 type="dislike"
                 onClick={() => onClickFeedback(false)}
               />

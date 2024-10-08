@@ -20,15 +20,15 @@ interface Grant {
   updatedAt: string;
 }
 
-interface GrantApplication {
-  id: number;
-  grant: Partial<Grant>;
-  applicant: Partial<Applicant>;
-  positive: boolean;
-  reason: string;
-  createdAt: string;
-  updatedAt: string;
-}
+// interface GrantApplication {
+//   id: number;
+//   grant: Partial<Grant>;
+//   applicant: Partial<Applicant>;
+//   positive: boolean;
+//   reason: string;
+//   createdAt: string;
+//   updatedAt: string;
+// }
 
 interface GrantApplicationFeedback {
   id: number;
@@ -36,6 +36,7 @@ interface GrantApplicationFeedback {
   applicant: Partial<Applicant>;
   positive: boolean;
   feedback: string;
+  appliedAt: string;
   createdAt: string;
   updatedAt: string;
 }

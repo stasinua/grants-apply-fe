@@ -1,5 +1,9 @@
 import { useMutation, useQuery } from '@apollo/client';
-import { addFeedbackMutation, feedbacksQuery } from './api'; // Import your GraphQL query
+import {
+  addFeedbackMutation,
+  deleteAllFeedbacksForApplicantMutation,
+  feedbacksQuery,
+} from './api'; // Import your GraphQL query
 import { graphQlClient } from '..';
 
 export const usePaginatedApplicantGrantFeedbacks = (
@@ -16,10 +20,13 @@ export const usePaginatedApplicantGrantFeedbacks = (
     positive
   );
 
-  const { loading, error, data, refetch } = useQuery(feedbacksQuery.queryShema, {
-    variables: { applicantId, page, limit, positive },
-    client: graphQlClient,
-  });
+  const { loading, error, data, refetch } = useQuery(
+    feedbacksQuery.queryShema,
+    {
+      variables: { applicantId, page, limit, positive },
+      client: graphQlClient,
+    }
+  );
 
   return {
     refetch,
@@ -44,6 +51,17 @@ export const addApplicantGrantFeedback = (
       applicantId,
       positive,
       feedback,
+    },
+  });
+
+  return res;
+};
+
+export const deleteAllFeedbacksForApplicant = (applicantId: number) => {
+  const res = graphQlClient.mutate({
+    mutation: deleteAllFeedbacksForApplicantMutation.queryShema,
+    variables: {
+      applicantId,
     },
   });
 
