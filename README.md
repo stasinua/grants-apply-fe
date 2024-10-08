@@ -28,8 +28,14 @@ yarn dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Deployment/containerization
+## Deployment/containerization [Docker compose V2 (Latest)]
 
 ```bash
 yarn container:app
+```
+
+## Deployment/containerization [Docker compose V1]
+
+```bash
+yarn container:app:composev1
 ```

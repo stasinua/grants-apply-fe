@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "container:app": "docker-compose up frontend --build"
+    "container:app": "docker compose up frontend --build",
+    "container:app:composev1": "docker-compose up frontend --build"
   },
   "dependencies": {
     "@apollo/client": "^3.11.8",
