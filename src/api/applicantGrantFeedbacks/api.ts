@@ -16,6 +16,17 @@ export const addFeedbackMutation = {
   `),
 };
 
+export const deleteAllFeedbacksForApplicantMutation = {
+  dataKey: 'deleteAllFeedbacksForApplicant',
+  queryShema: gql(`
+  mutation deleteAllFeedbacksForApplicant($applicantId: Int!) {
+    deleteAllFeedbacksForApplicant(applicantId:$applicantId) {
+      id
+    }
+  }
+  `),
+};
+
 export const feedbacksQuery = {
   dataKey: 'getAllApplicantGrantFeedbacks',
   queryShema: gql(`

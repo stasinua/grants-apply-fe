@@ -20,9 +20,11 @@ import GrantCard from './components/GrantCard';
 import usePaginatedGrants from '@/api/grants';
 import { useEffect, useState } from 'react';
 import { DataGrid, GridColDef, GridRowsProp } from '@mui/x-data-grid';
-import usePaginatedGrantApplications from '@/api/grantApplications';
 import GrantApplicationStatusChipRenderer from './components/GrantApplicationStatusChip';
-import { usePaginatedApplicantGrantFeedbacks } from '@/api/applicantGrantFeedbacks';
+import {
+  deleteAllFeedbacksForApplicant,
+  usePaginatedApplicantGrantFeedbacks,
+} from '@/api/applicantGrantFeedbacks';
 import GrantFeedbackDialog from './components/GrantFeedbackDialog';
 import { formatTimeStamp } from '@/helpers/time';
 import { Close } from '@mui/icons-material';
@@ -47,10 +49,12 @@ const grantFeedbackColumns: GridColDef[] = [
   { field: 'col3', headerName: 'Grant amount', width: 200 },
   { field: 'col4', headerName: 'Deadline', width: 200 },
   { field: 'col5', headerName: 'Match date', width: 200 },
+  { field: 'col6', headerName: 'Feedback', width: 200 },
 ];
 
 const Dashboard = () => {
   const [page, setPage] = useState(1);
+  const [mutationLoading, setMutationLoading] = useState('');
   const [openedAlert, setOpenedAlert] = useState(true);
   const [notificationMessage, setNotificationMessage] = useState('');
   const [createFeedbackObj, setCreateFeedbackObj] = useState<{
@@ -70,42 +74,25 @@ const Dashboard = () => {
   } = usePaginatedGrants(page, 4, 1);
 
   const {
-    loading: loadingGrantApplications,
-    error: errorGetGrantApplications,
-    grantApplications,
-    // total: totalGrantApplications,
-  } = usePaginatedGrantApplications(page, 4, 1);
-
-  const {
     refetch: refetchGrantFeedbacks,
     loading: loadingApplicantGrantFeedbacks,
     error: errorGetApplicantGrantFeedbacks,
     applicantGrantFeedbacks,
-    // total: totalApplicantGrantFeedbacks,
-  } = usePaginatedApplicantGrantFeedbacks(1, page, 4, true); // We fetch only "positive" feedbacks to represent past grants
+    total: totalApplicantGrantFeedbacks,
+  } = usePaginatedApplicantGrantFeedbacks(1, page, 10); // Fetch all grant feedbacks/applications
+
+  const {
+    refetch: refetchPastGrants,
+    loading: loadingPastGrants,
+    error: errorPastGrants,
+    applicantGrantFeedbacks: pastGrants,
+    total: totalPastGrants,
+  } = usePaginatedApplicantGrantFeedbacks(1, page, 10, true); // We fetch only "positive" feedbacks to represent past grants
 
   console.log('applicantGrantFeedbacks ->>>', applicantGrantFeedbacks);
   console.log('grants ->>>', grants);
-  console.log('grantApplications ->>>', grantApplications);
 
-  const grantApplicationRows: GridRowsProp = grantApplications
-    ? grantApplications.map((applicationObj: GrantApplication) => {
-        return {
-          id: applicationObj.id,
-          col1: applicationObj.grant.institution?.name,
-          col2: applicationObj.grant.name,
-          col3: applicationObj.grant.grantAmount,
-          col4: applicationObj.positive,
-          col5: applicationObj.grant.deadlineAt
-            ? formatTimeStamp(applicationObj.grant.deadlineAt)
-            : '',
-          col6: applicationObj.createdAt
-            ? formatTimeStamp(applicationObj.createdAt)
-            : '',
-        };
-      })
-    : [];
-  const grantFeedbackRows: GridRowsProp = applicantGrantFeedbacks
+  const grantApplicationRows: GridRowsProp = applicantGrantFeedbacks
     ? applicantGrantFeedbacks.map(
         (applicationObj: GrantApplicationFeedback) => {
           return {
@@ -113,15 +100,34 @@ const Dashboard = () => {
             col1: applicationObj.grant.institution?.name,
             col2: applicationObj.grant.name,
             col3: applicationObj.grant.grantAmount,
-            col4: applicationObj.grant.deadlineAt
+            col4: applicationObj.positive,
+            col5: applicationObj.grant.deadlineAt
               ? formatTimeStamp(applicationObj.grant.deadlineAt)
               : '',
-            col5: applicationObj.createdAt
+            col6: applicationObj.createdAt
               ? formatTimeStamp(applicationObj.createdAt)
               : '',
           };
         }
       )
+    : [];
+
+  const grantFeedbackRows: GridRowsProp = pastGrants
+    ? pastGrants.map((applicationObj: GrantApplicationFeedback) => {
+        return {
+          id: applicationObj.id,
+          col1: applicationObj.grant.institution?.name,
+          col2: applicationObj.grant.name,
+          col3: applicationObj.grant.grantAmount,
+          col4: applicationObj.grant.deadlineAt
+            ? formatTimeStamp(applicationObj.grant.deadlineAt)
+            : '',
+          col5: applicationObj.createdAt
+            ? formatTimeStamp(applicationObj.createdAt)
+            : '',
+          col6: applicationObj.feedback,
+        };
+      })
     : [];
   // MUTIATIONS
   const [addFeedback] = useMutation(addFeedbackMutation.queryShema, {
@@ -137,6 +143,7 @@ const Dashboard = () => {
     feedback: string
   ) => {
     try {
+      setMutationLoading(positive ? `${grantId}:like` : `${grantId}:dislike`);
       const { data: addFeedbackRes } = await addFeedback({
         variables: {
           grantId,
@@ -150,27 +157,58 @@ const Dashboard = () => {
         applicantId: 1,
         limit: 4,
       });
+      refetchPastGrants({
+        page: 1,
+        applicantId: 1,
+        limit: 10,
+        positive: true,
+      });
       refetchGrantFeedbacks({
         page: 1,
         applicantId: 1,
-        limit: 4,
-        positive: true,
+        limit: 10,
       });
       console.log('addApplicantGrantFeedback ->>>', addFeedbackRes);
-      setNotificationMessage('Feedback saved successfully')
+      setMutationLoading('');
+      setNotificationMessage('Feedback saved successfully');
     } catch (err) {
+      setMutationLoading('');
       // TODO: Add global notifications
       console.log('addApplicantGrantFeedback err ->>>', err);
     }
   };
 
+  const resetGrants = async () => {
+    try {
+      await deleteAllFeedbacksForApplicant(1);
+      setNotificationMessage('Feedbacks deleted successfully');
+      refetchGrants({
+        page: 1,
+        applicantId: 1,
+        limit: 4,
+      });
+      refetchPastGrants({
+        page: 1,
+        applicantId: 1,
+        limit: 10,
+        positive: true,
+      });
+      refetchGrantFeedbacks({
+        page: 1,
+        applicantId: 1,
+        limit: 10,
+      });
+    } catch (err) {
+      console.log('resetGrants err ->>>', err);
+    }
+  };
+
+  console.log(mutationLoading);
+
   // console.log(loading, grants, error);
 
   const requestError =
-    errorGetGrants ||
-    errorGetGrantApplications ||
-    errorGetGrantApplications ||
-    errorGetApplicantGrantFeedbacks;
+    errorGetGrants || errorPastGrants || errorGetApplicantGrantFeedbacks;
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -179,7 +217,10 @@ const Dashboard = () => {
         <div
           style={{ position: 'absolute', bottom: 20, right: 20, zIndex: 1000 }}
         >
-          <Alert sx={{ maxWidth: 400, zIndex: 1000 }} severity={requestError ? 'error' : 'info'}>
+          <Alert
+            sx={{ maxWidth: 400, zIndex: 1000 }}
+            severity={requestError ? 'error' : 'info'}
+          >
             {requestError ? requestError.message : notificationMessage}
             <IconButton
               onClick={() => {
@@ -276,12 +317,20 @@ const Dashboard = () => {
                     container
                     spacing={2}
                     columns={12}
+                    justifyContent={'center'}
                     sx={{ mb: (theme) => theme.spacing(2) }}
                   >
                     {grants
                       ? grants.map((grantObj: Grant) => (
                           <Grid2 key={grantObj.id + grantObj.name} size={3}>
                             <GrantCard
+                              mutationLoading={
+                                mutationLoading.indexOf(
+                                  grantObj.id.toString()
+                                ) !== -1
+                                  ? mutationLoading.split(':')?.[1]
+                                  : ''
+                              }
                               grant={grantObj}
                               onClickApply={() => {}}
                               onClickFeedback={(positive: boolean) => {
@@ -306,6 +355,25 @@ const Dashboard = () => {
                           </Grid2>
                         ))
                       : null}
+                    {grants?.length === 0 ? (
+                      <Grid2 size={3}>
+                        <Grid2
+                          container
+                          spacing={2}
+                          columns={12}
+                          justifyContent={'center'}
+                        >
+                          <Typography variant="h2">That's all folks</Typography>{' '}
+                          <Button
+                            onClick={() => {
+                              resetGrants();
+                            }}
+                          >
+                            Run again
+                          </Button>
+                        </Grid2>
+                      </Grid2>
+                    ) : null}
                   </Grid2>
                 </Grid2>
               )}
@@ -324,7 +392,7 @@ const Dashboard = () => {
                 </Typography>
               </Grid2>
               <Grid2 size={12} height={400}>
-                {loadingGrantApplications ? (
+                {loadingPastGrants ? (
                   <CircularProgress />
                 ) : (
                   <DataGrid
@@ -345,6 +413,7 @@ const Dashboard = () => {
                     pageSizeOptions={[5]}
                     rows={grantApplicationRows}
                     columns={grantApplicationColumns}
+                    rowCount={totalApplicantGrantFeedbacks}
                   />
                 )}
               </Grid2>
@@ -375,6 +444,7 @@ const Dashboard = () => {
                     pageSizeOptions={[5]}
                     rows={grantFeedbackRows}
                     columns={grantFeedbackColumns}
+                    rowCount={totalPastGrants}
                   />
                 )}
               </Grid2>
